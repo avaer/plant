@@ -146,15 +146,46 @@ const grassColors = [
   '#a79c67',
 ];
 
-const grassMaterial = new THREE.MeshBasicMaterial({
-  color: 0xFFFFFF,
-  // emissive: 0x333333,
-  // specular: 0x000000,
-  // shininess: 0,
-  // side: THREE.DoubleSide,
-  // shading: THREE.FlatShading,
-  flatShading: true,
-  vertexColors: THREE.VertexColors,
+const grassMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    /* fogColor: {
+      type: 'v3',
+      value: new THREE.Color(),
+    },
+    fogDensity: {
+      type: 'f',
+      value: 0,
+    },
+    sunIntensity: {
+      type: 'f',
+      value: 0,
+    }, */
+    factor: {
+      type: 'f',
+      value: 0,
+    },
+  },
+  vertexShader: `\
+    attribute vec3 color;
+    uniform float factor;
+    varying vec3 vColor;
+
+    void main() {
+      vColor = color;
+
+      vec3 p = position.xyz;
+      p.x += min(max(p.y, 0.0), 1.0) * factor;
+      vec4 mvPosition = modelViewMatrix * vec4( p, 1.0 );
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,
+  fragmentShader: `\
+    varying vec3 vColor;
+
+    void main() {
+      gl_FragColor = vec4( vColor, 1.0 );
+    }
+  `
 });
 
 // XXX abstract these into sampleUtils
@@ -970,6 +1001,8 @@ scene.add(mesh);
 
 function animate() {
   orbitControls.update();
+
+  grassMaterial.uniforms.factor.value = Math.sin((Date.now() % 2000) / 2000 * Math.PI * 2);
 
   renderer.render(scene, camera);
 }
